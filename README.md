@@ -1,2 +1,4 @@
 # GBS2map
-workflow for generating genetic maps out of GBS data
+____
+
+### workflow and tool-set for generating genetic maps out of GBS data
