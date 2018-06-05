@@ -1,0 +1,165 @@
+---
+title: "Genetic map construction"
+author: "MichelMoser"
+date: "April 24, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir='/media/mmoser/data1/P.EXSERTA/PEXV1.1.3/genetic_maps/markers/F7-K/')
+```
+
+## Clustering of GBS markers to linkage groups
+
+
+```{r loading, include=FALSE, cache=FALSE}
+library(ggplot2)
+library(qtlTools)
+library(reshape2)
+library(dplyr)
+library(ASMap)
+library(ABHgenotypeR)
+```
+
+------
+         
+         
+#### **preliminary analysis:** 
+
+Inspect missings in markers and individuals
+
+#### **missing data per individual**
+
+```{r prefiltering1, message=FALSE, warning=FALSE}
+#missing data per marker
+mrk <- read.csv2("LM3_F7_K.MARKER.genoSUMMARY.csv", header = T, sep = ",")
+
+head(mrk)
+mrks <- melt(mrk)
+mrks <- mrks %>% filter(variable != "tot")
+
+#check for exessive missings
+mrk[which(mrk$NA. > 100),]
+
+ggplot(data = mrks, aes(value, fill = variable)) +
+  geom_density(alpha = 0.2)
+
+```
+
+#### **missing data per individual**
+
+```{r prefiltering2, message=FALSE, warning=FALSE}
+#missing data per individual
+indv <- read.csv2("LM3_F7_K.INDIVIDUAL.genoSUMMARY.csv", header = T, sep = ",")
+indvs <- melt(indv)
+head(indv)
+head(indvs)
+indvs <- indvs %>% filter(variable != "tot")
+
+#distribution of missings and ax and ex genotypes
+ggplot(data = indvs, aes(value, variable, color = variable)) +
+  geom_point(alpha = 0.2)
+#ax vs ex
+ggplot(data = indv, aes(AX, EX)) +
+  geom_point(alpha = 0.2)
+#missings
+ggplot(data = indv, aes(NA.)) +
+  geom_histogram(alpha = 0.2)
+
+#remove those 4 individuals from the genetic map building
+
+indv[which(indv$NA. > 1000),]
+
+# 4 individuals removed and altered as LM3_F7_K.markers.clean.csv
+```
+
+# **Map building** 
+
+
+```{r map initialising, message=FALSE, warning=FALSE}
+f7_K <- read.cross(format = "csv", file = "LM3_F7_K.markers.clean.csv", F.gen = 7, genotypes = c("AX", "HET", "EX"))
+
+f7_K <- convert2riself(f7_K)
+
+#remove duplicate markers
+f7_K <- pullCross(f7_K, type = "co.located")
+
+#save duplicates and corresponding markers in bins
+duplicatesf7_K <- findDupMarkers(f7_K)
+
+f7_dups <- do.call(rbind, lapply(seq_along(duplicatesf7_K), function(i){
+  data.frame(bin_name=names(duplicatesf7_K)[i], duplicatesf7_K[[i]])}))
+head(f7_dups)
+write.table(f7_dups,file = "LM3_F7_K.marker.dupbins.txt", quote = FALSE, row.names = FALSE)
+
+```
+# Generate inital map
+
+```{r map_construction, message=FALSE, warning=FALSE}
+
+#set bychr = FALSE to allow complete reconstruction of map 
+map1 <- mstmap(f7_K, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+
+#sort markers in each LG
+map1 <- mstmap(map1, pop.tpye = "ARIL", bychr = T, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+
+#inspect results
+summary(map1)
+
+geno.image(map1)
+
+
+head(geno.table(map1))
+#geno.image(map1, col = c("white", "darkorange", "lightblue"))
+heatMap(map1, lmax = 25)
+nmar(map1)
+summary(map1)
+
+
+
+```
+
+## Merging of unlinked markers
+
+Expected 7 LGs in Petunia, therefore merge small LGs into a single one and try to push markers onto the 7 large LGs
+
+```{r merge}
+#put all small LGs in to one
+nmar(map1)
+
+row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 100])))
+
+map2 <- mergeCross(map1, merge = list(
+                       "UNKNOWN" =row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 100])))
+))
+heatMap(map2)
+#try to assign them to chromosomes
+map2 <- pushCross(map2, type = "unlinked", unlinked.chr = "UNKNOWN" )
+
+
+summary(map2)
+#no improvement
+
+write.cross(format = "csv", map2, "F7_Kmap2.asmap.csv")
+
+
+?readABHgenotypes()
+
+```
+
+# ABH genotyper 
+
+
+
+
+```{r}
+
+abh <- readABHgenotypes("/media/mmoser/data1/thesis/chapter3/RIL.abh.input", nameA = "A", nameB = "B")
+
+plotGenos(abh)
+postImpGenotypes <- imputeByFlanks(abh)
+
+plotGenos(postImpGenotypes)
+```
+
