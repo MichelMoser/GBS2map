@@ -12,3 +12,9 @@ ____
 * genetic map
 
 * sequences anchored to linkage groups
+
+
+
+#### conversion of qtl-objects to ABGgenotyer-input
+
+python Rqtl_2_abh.py  path/to/input/qtl.cross.csv   path/to/output/abh.input.csv

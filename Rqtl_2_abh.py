@@ -70,6 +70,7 @@ def qtl2abh(csvfile):
                         kl.append("")#print(str(i))
                 CM= kl
             
+<<<<<<< HEAD
             else:
                 #print(line)
                 line = line.strip()
@@ -149,3 +150,56 @@ def main():
 
 if __name__ == "__main__":
        main()
+=======
+        #LGs
+        elif k == 2: 
+            line = line.strip()
+            line = line.split(',')
+            line =  [it.replace(".","") for it in line]
+            LG = line
+            for ak in line: 
+                ak1 = ak.replace("L","")
+                chrs.append(ak1)
+        #CM
+        elif k == 3:
+            line = line.strip()
+            line = line.split(",")
+            kl = [] 
+            for i in line: 
+                if i:
+                    kl.append(str(int(float(i)* 100000)))
+                else: 
+                    kl.append("")#print(str(i))
+            CM= kl
+        
+        else:
+            #print(line)
+            line = line.strip()
+            line = line.split(",")
+            line =  [it.replace("AA","A") for it in line]
+            line =  [it.replace("BB","B") for it in line]
+            line =  [it.replace("-","N") for it in line]
+            body.append(line)
+
+
+gz = []
+for ei in list(zip(header, LG)):
+   gz.append("".join(ei))
+
+gz1 = []
+for eii in list(zip(gz, CM)):
+     gz1.append("_".join(eii))
+
+
+gz1[0] = "genotypes"
+chrs[0] = "chrs"
+
+print("Extracting {} markers from {} individuals".format(len(gz1)-1, k-3))
+
+with open(OUTFILE, "w") as outf:
+    outf.write(",".join(gz1)+"\n")
+    outf.write(",".join(chrs)+"\n")
+    for li in body:
+        outf.write(",".join(li)+"\n")
+print("Finished.")
+>>>>>>> a7b6cb117a9dd094475df561ac0ea1d4eb1632b8
