@@ -20,6 +20,7 @@ library(reshape2)
 library(dplyr)
 library(ASMap)
 library(ABHgenotypeR)
+library(qtl)
 ```
 
 ------
@@ -82,9 +83,6 @@ f7_K <- read.cross(format = "csv", file = "LM3_F7_K.markers.clean.csv", F.gen = 
 
 f7_K <- convert2riself(f7_K)
 
-#remove duplicate markers
-f7_K <- pullCross(f7_K, type = "co.located")
-
 #save duplicates and corresponding markers in bins
 duplicatesf7_K <- findDupMarkers(f7_K)
 
@@ -92,6 +90,11 @@ f7_dups <- do.call(rbind, lapply(seq_along(duplicatesf7_K), function(i){
   data.frame(bin_name=names(duplicatesf7_K)[i], duplicatesf7_K[[i]])}))
 head(f7_dups)
 write.table(f7_dups,file = "LM3_F7_K.marker.dupbins.txt", quote = FALSE, row.names = FALSE)
+
+#remove duplicate markers
+f7_K <- pullCross(f7_K, type = "co.located")
+
+
 
 ```
 # Generate inital map
@@ -128,10 +131,10 @@ Expected 7 LGs in Petunia, therefore merge small LGs into a single one and try t
 #put all small LGs in to one
 nmar(map1)
 
-row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 100])))
+row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 20])))
 
 map2 <- mergeCross(map1, merge = list(
-                       "UNKNOWN" =row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 100])))
+                       "UNKNOWN" =row.names(as.data.frame(unlist(nmar(map1)[nmar(map1) < 20])))
 ))
 heatMap(map2)
 #try to assign them to chromosomes
@@ -141,10 +144,10 @@ map2 <- pushCross(map2, type = "unlinked", unlinked.chr = "UNKNOWN" )
 summary(map2)
 #no improvement
 
-write.cross(format = "csv", map2, "F7_Kmap2.asmap.csv")
+names(map2$geno)[8] <- "L.8"
 
+write.cross(format = "csv", map2, "F7_Kmap2.asmap")
 
-?readABHgenotypes()
 
 ```
 
@@ -154,12 +157,36 @@ write.cross(format = "csv", map2, "F7_Kmap2.asmap.csv")
 
 
 ```{r}
+#test 
 
-abh <- readABHgenotypes("/media/mmoser/data1/thesis/chapter3/RIL.abh.input", nameA = "A", nameB = "B")
+abh <- readABHgenotypes("/home/mmoser/Tools/repositories/GBS2map/test.abh.input", nameA = "A", nameB = "B")
+
+
 
 plotGenos(abh)
-postImpGenotypes <- imputeByFlanks(abh)
+pes <- imputeByFlanks(abh)
 
-plotGenos(postImpGenotypes)
+pes <- correctStretches(pes)
+pes <- imputeByFlanks(pes)
+
+reportGenos(pes)
+plotGenos(pes)
+
+writeABHgenotypes(pes, "/home/mmoser/Tools/repositories/GBS2map/test.abh.output")
+
+
+
+
+f7_K <- read.cross(format = "csv", file ="/home/mmoser/Tools/repositories/GBS2map/test.abh.output", F.gen = 7, genotypes = c("A", "HET", "B"))
+f7_K <- convert2riself(f7_K)
+f7_K <- pullCross(f7_K, type = "co.located")
+f7_K
+
+#set bychr = FALSE to allow complete reconstruction of map 
+map1 <- mstmap(f7_K, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+
+summary(map1)
+heatMap(map1)
+plot.map(map1)
 ```
 
