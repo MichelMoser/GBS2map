@@ -72,7 +72,7 @@ for eii in list(zip(gz, CM)):
 gz1[0] = "genotypes"
 chrs[0] = "chrs"
 
-print("Extracting {} markers from {} individuals".format(len(gz1), k-3))
+print("Extracting {} markers from {} individuals".format(len(gz1)-1, k-3))
 
 with open(OUTFILE, "w") as outf:
     outf.write(",".join(gz1)+"\n")
