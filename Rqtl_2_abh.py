@@ -114,7 +114,7 @@ def abh2qtl(csvfile):
             if k == 1:
                 line = line.strip()
                 line = line.split(",")
-                line[0] ==  "Genotype"
+                line[0] =  "Genotype"
                 harvest.append(line)
 
             elif k == 2:

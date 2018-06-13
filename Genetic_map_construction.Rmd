@@ -138,17 +138,27 @@ map2 <- mergeCross(map1, merge = list(
 ))
 heatMap(map2)
 #try to assign them to chromosomes
-map2 <- pushCross(map2, type = "unlinked", unlinked.chr = "UNKNOWN" )
+#map2 <- pushCross(map2, type = "unlinked", unlinked.chr = "UNKNOWN" )
 
+#map3 <- mstmap(map2, bychr = TRUE, trace = TRUE, anchor = TRUE, p.value= 2)
+#summary(map3)
+nmar(map1)
 
-summary(map2)
+# summary(map2)
 #no improvement
 
 names(map2$geno)[8] <- "L.8"
 
+profileGen(map2, bychr = FALSE, stat.type = c("xo", "dxo", "miss"), id = "Genotype", xo.lambda = 25, layout = c(1, 3), lty = 2)
+
 write.cross(format = "csv", map2, "F7_Kmap2.asmap")
+?profileGen
+```
 
+# Conversion to ABHgenotyper
 
+```{bash}
+python ~/Tools/repositories/GBS2map/Rqtl_2_abh.py -i F7_Kmap2.asmap.csv -o F7_Kmap2.abhIN.csv -q2a
 ```
 
 # ABH genotyper 
@@ -158,35 +168,53 @@ write.cross(format = "csv", map2, "F7_Kmap2.asmap")
 
 ```{r}
 #test 
-
-abh <- readABHgenotypes("/home/mmoser/Tools/repositories/GBS2map/test.abh.input", nameA = "A", nameB = "B")
-
-
+library(ABHgenotypeR)
+abh <- readABHgenotypes("F7_Kmap2.abhIN.csv", nameA = "A", nameB = "B")
 
 plotGenos(abh)
+# NA's are mistakenly labelled as heterozygotes when heterozygotes are absent. Bug in abhgenotyper code
+
 pes <- imputeByFlanks(abh)
 
 pes <- correctStretches(pes)
 pes <- imputeByFlanks(pes)
 
 reportGenos(pes)
-plotGenos(pes)
+plotGenos(pes, chromToPlot = 1:7)
+# NOTE: 
 
-writeABHgenotypes(pes, "/home/mmoser/Tools/repositories/GBS2map/test.abh.output")
+# NA's are mistakenly labelled as heterozygotes when heterozygotes are absent. Bug in abhgenotyper code
+
+writeABHgenotypes(pes, "F7_Kmap3.abhOUT.csv")
+```
+
+### convert back to Rqtl format
+
+```{bash}
+python ~/Tools/repositories/GBS2map/Rqtl_2_abh.py -i F7_Kmap3.abhOUT.csv -o F7_Kmap3.asmapIN.csv -a2q
+
+
+```
 
 
 
+```{r}
 
-f7_K <- read.cross(format = "csv", file ="/home/mmoser/Tools/repositories/GBS2map/test.abh.output", F.gen = 7, genotypes = c("A", "HET", "B"))
+f7_K <- read.cross(format = "csv", file ="F7_Kmap3.asmapIN.csv", F.gen = 7, genotypes = c("A", "HET", "B"))
 f7_K <- convert2riself(f7_K)
 f7_K <- pullCross(f7_K, type = "co.located")
 f7_K
 
 #set bychr = FALSE to allow complete reconstruction of map 
-map1 <- mstmap(f7_K, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+map4 <- mstmap(f7_K, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
 
-summary(map1)
-heatMap(map1)
-plot.map(map1)
+summary(map4)
+heatMap(map4)
+plot.map(map4)
+
+profileGen(map4, bychr = FALSE, stat.type = c("xo", "dxo", "miss"), id = "Genotype", xo.lambda = 25, layout = c(1, 3), lty = 2)
+
+profileMark(map4, stat.type = c("seg.dist", "dxo", "erf", "lod"), id = "Genotype", layout = c(1, 4), type = "l")
+
 ```
 
