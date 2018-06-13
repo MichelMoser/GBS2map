@@ -83,13 +83,14 @@ f7_K <- read.cross(format = "csv", file = "LM3_F7_K.markers.clean.csv", F.gen = 
 
 f7_K <- convert2riself(f7_K)
 
-#save duplicates and corresponding markers in bins
+#save duplicates and corresponding markers in bins to reconstruct them later
+
 duplicatesf7_K <- findDupMarkers(f7_K)
 
 f7_dups <- do.call(rbind, lapply(seq_along(duplicatesf7_K), function(i){
   data.frame(bin_name=names(duplicatesf7_K)[i], duplicatesf7_K[[i]])}))
 head(f7_dups)
-write.table(f7_dups,file = "LM3_F7_K.marker.dupbins.txt", quote = FALSE, row.names = FALSE)
+write.table(f7_dups,file = "LM3_F7_K.marker.dupbins1.txt", quote = FALSE, row.names = FALSE)
 
 #remove duplicate markers
 f7_K <- pullCross(f7_K, type = "co.located")
@@ -176,7 +177,8 @@ plotGenos(abh)
 
 pes <- imputeByFlanks(abh)
 
-pes <- correctStretches(pes)
+?correctStretches
+pes <- correctStretches(pes, maxHapLength = 2)
 pes <- imputeByFlanks(pes)
 
 reportGenos(pes)
@@ -196,17 +198,25 @@ python ~/Tools/repositories/GBS2map/Rqtl_2_abh.py -i F7_Kmap3.abhOUT.csv -o F7_K
 
 ```
 
+### rebuild map from imputed and corrected markers in ASMap
 
 
 ```{r}
 
-f7_K <- read.cross(format = "csv", file ="F7_Kmap3.asmapIN.csv", F.gen = 7, genotypes = c("A", "HET", "B"))
-f7_K <- convert2riself(f7_K)
-f7_K <- pullCross(f7_K, type = "co.located")
-f7_K
+f7_K2 <- read.cross(format = "csv", file ="F7_Kmap3.asmapIN.csv", F.gen = 7, genotypes = c("A", "HET", "B"))
+f7_K2 <- convert2riself(f7_K2)
+f7_K2 <- pullCross(f7_K2, type = "co.located")
+f7_K2
 
 #set bychr = FALSE to allow complete reconstruction of map 
-map4 <- mstmap(f7_K, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+map4 <- mstmap(f7_K2, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+
+```
+
+# Final map
+
+```{r}
+
 
 summary(map4)
 heatMap(map4)
