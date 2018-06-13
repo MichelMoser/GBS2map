@@ -21,6 +21,7 @@ library(dplyr)
 library(ASMap)
 library(ABHgenotypeR)
 library(qtl)
+library(xoi)
 ```
 
 ------
@@ -177,8 +178,7 @@ plotGenos(abh)
 
 pes <- imputeByFlanks(abh)
 
-?correctStretches
-pes <- correctStretches(pes, maxHapLength = 2)
+pes <- correctStretches(pes)
 pes <- imputeByFlanks(pes)
 
 reportGenos(pes)
@@ -203,13 +203,12 @@ python ~/Tools/repositories/GBS2map/Rqtl_2_abh.py -i F7_Kmap3.abhOUT.csv -o F7_K
 
 ```{r}
 
-f7_K2 <- read.cross(format = "csv", file ="F7_Kmap3.asmapIN.csv", F.gen = 7, genotypes = c("A", "HET", "B"))
-f7_K2 <- convert2riself(f7_K2)
-f7_K2 <- pullCross(f7_K2, type = "co.located")
-f7_K2
+map3 <- read.cross(format = "csv", file ="F7_Kmap3.asmapIN.csv", F.gen = 7, genotypes = c("A", "HET", "B"))
+map3 <- convert2riself(map3)
+map3 <- pullCross(map3, type = "co.located")
 
 #set bychr = FALSE to allow complete reconstruction of map 
-map4 <- mstmap(f7_K2, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
+map4 <- mstmap(map3, pop.tpye = "ARIL", bychr = F, dist.fun = "kosambi", trace = TRUE, detectBadData = T, p.value = 1e-09, , mvest.bc = TRUE, return.imputed = T)
 
 ```
 
@@ -226,5 +225,11 @@ profileGen(map4, bychr = FALSE, stat.type = c("xo", "dxo", "miss"), id = "Genoty
 
 profileMark(map4, stat.type = c("seg.dist", "dxo", "erf", "lod"), id = "Genotype", layout = c(1, 4), type = "l")
 
+
+#crossover events dropped from 11 to 9
+mean(countxo(map2))
+mean(countxo(map4))
+
+summaryMap(map4)
 ```
 
